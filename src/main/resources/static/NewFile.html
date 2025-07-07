@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Attendance System</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Attendance Management System</h1>
+
+    <form id="attendanceForm">
+      <h2>Mark Attendance</h2>
+      <input type="text" id="studentName" placeholder="Student Name" required />
+      <input type="date" id="date" required />
+      <label class="checkbox-group">
+        <input type="checkbox" id="present" />
+        <span>Present</span>
+      </label>
+      <button type="submit" class="primary">Mark Attendance</button>
+    </form>
+
+    <section class="search-section">
+      <h2>Search Attendance Records</h2>
+      <input type="text" id="searchName" placeholder="Student Name" />
+      <input type="date" id="searchDate" />
+      <button onclick="searchAttendance()" class="secondary">Search</button>
+      <button onclick="loadAttendance()" class="reset">Clear</button>  
+    </section>
+
+    <h2>Attendance Records</h2>
+    <div class="table-wrapper">
+      <table id="attendanceTable">
+        <thead>
+          <tr>
+            <th>ID</th><th>Name</th><th>Date</th><th>Present</th><th>Delete</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <h2>Attendance Report</h2>
+    <button onclick="loadReport()" class="primary">Generate Report</button>
+    <div class="table-wrapper">
+      <table id="reportTable">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Total</th>
+            <th>Present</th>
+            <th>Absent</th>
+            <th>% Present</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

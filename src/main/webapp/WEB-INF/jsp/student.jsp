@@ -1,0 +1,243 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Student Module</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    /* Optional print styling */
+    @media print {
+      .sidebar, .primary, .secondary, .delete-btn {
+        display: none !important;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      th, td {
+        border: 1px solid #000;
+        padding: 8px;
+      }
+    }
+
+    /* Optional button styling */
+    .primary {
+      background-color: #5a67d8;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+
+    .secondary {
+      background-color: #48bb78;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .delete-btn {
+      background-color: #e53e3e;
+      color: white;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard-layout">
+    <!-- Sidebar -->
+    <nav class="sidebar">
+      <h2>Dashboard</h2>
+      <ul>
+        <li><a href="index">🏠 Home</a></li>
+        <li><a href="students">👨‍🎓 Student Module</a></li>
+        <li><a href="home#attendanceForm">📝 Mark Attendance</a></li>
+        <li><a href="home#reportTable">📊 Attendance Report</a></li>
+      </ul>
+    </nav>
+
+    <!-- Student Module -->
+    <main class="main-content">
+      <div class="container">
+        <h1>Student Percentage Calculator</h1>
+
+        <!-- Set global working days -->
+        <form onsubmit="setWorkingDays(event)">
+          <input type="number" id="workingDays" placeholder="Set Total Working Days" required />
+          <button type="submit" class="primary">Set</button>
+        </form>
+
+        <!-- Add student attendance -->
+        <form onsubmit="addStudentPercentage(event)">
+          <input type="text" id="studentName" placeholder="Student Name" required />
+          <input type="number" id="daysPresent" placeholder="Days Present" required />
+          <button type="submit" class="secondary">Add Student</button>
+        </form>
+
+        <!-- Result table -->
+        <div class="table-wrapper">
+          <table id="studentPercentageTable">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Days Present</th>
+                <th>Working Days</th>
+                <th>Percentage</th>
+                <th>Delete</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+
+          <!-- Download PDF Button -->
+          <button onclick="generatePDF()" class="primary" style="margin-top: 20px;">📄 Download PDF</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    let workingDays = 0;
+    let students = [];
+
+    function setWorkingDays(e) {
+      e.preventDefault();
+      workingDays = parseInt(document.getElementById("workingDays").value);
+      alert("Working days set to " + workingDays);
+      document.getElementById("workingDays").value = "";
+      renderTable();
+    }
+
+    function addStudentPercentage(e) {
+    	  e.preventDefault();
+    	  const name = document.getElementById("studentName").value;
+    	  const present = parseInt(document.getElementById("daysPresent").value);
+
+    	  if (workingDays === 0) {
+    	    alert("Please set working days first.");
+    	    return;
+    	  }
+
+    	  const percentage = ((present / workingDays) * 100).toFixed(2);
+    	  students.push({ name, present, percentage });
+    	  renderTable();
+    	  document.getElementById("studentName").value = "";
+    	  document.getElementById("daysPresent").value = "";
+    	  fetch("http://localhost:9000/api/percentage", {
+    		  method: "POST",
+    		  headers: {
+    		    "Content-Type": "application/json"
+    		  },
+    		  body: JSON.stringify({
+    		    name: name,
+    		    workingDays: workingDays,
+    		    daysPresent: present,
+    		    percentage: parseFloat(percentage)
+    		  })
+    		})
+    		.then(res => res.json())
+    		.then(data => {
+    		  console.log("Saved to DB:", data);
+    		})
+    		.catch(err => {
+    		  console.error("Error saving to DB:", err);
+    		});
+    }
+    function deleteStudent(index) {
+      students.splice(index, 1);
+      renderTable();
+    }
+
+    function renderTable() {
+      const tbody = document.querySelector("#studentPercentageTable tbody");
+      tbody.innerHTML = "";
+
+      students.forEach((s, index) => {
+        const row = `<tr>
+          <td>${s.name}</td>
+          <td>${s.present}</td>
+          <td>${workingDays}</td>
+          <td>${s.percentage}%</td>
+          <td><button onclick="deleteStudent(${index})" class="delete-btn">❌</button></td>
+        </tr>`;
+        tbody.innerHTML += row;
+      });
+    }
+
+    function generatePDF() {
+    	  if (students.length === 0) {
+    	    alert("No student data available to export.");
+    	    return;
+    	  }
+
+    	  // Clone the original table
+    	  const originalTable = document.getElementById("studentPercentageTable");
+    	  const clonedTable = originalTable.cloneNode(true);
+    	  const thead = clonedTable.querySelector("thead tr");
+    	  const tbody = clonedTable.querySelector("tbody");
+
+    	  // Remove Delete column from header
+    	  thead.removeChild(thead.lastElementChild);
+
+    	  // Create new header with reordered columns
+    	  const newHeaders = ["No.", "Name", "Working Days", "Days Present", "Percentage"];
+    	  thead.innerHTML = "";
+    	  newHeaders.forEach(text => {
+    	    const th = document.createElement("th");
+    	    th.textContent = text;
+    	    thead.appendChild(th);
+    	  });
+
+    	  // Rebuild rows with new column order and serial number
+    	  const newTbody = document.createElement("tbody");
+    	  Array.from(tbody.children).forEach((row, index) => {
+    	    const cells = row.querySelectorAll("td");
+
+    	    const newRow = document.createElement("tr");
+    	    newRow.innerHTML = `
+    	      <td>${index + 1}</td> <!-- No. -->
+    	      <td>${cells[0].textContent}</td> <!-- Name -->
+    	      <td>${cells[2].textContent}</td> <!-- Working Days -->
+    	      <td>${cells[1].textContent}</td> <!-- Days Present -->
+    	      <td>${cells[3].textContent}</td> <!-- Percentage -->
+    	    `;
+    	    newTbody.appendChild(newRow);
+    	  });
+
+    	  clonedTable.replaceChild(newTbody, clonedTable.querySelector("tbody"));
+
+    	  // Wrap in a container and add to DOM temporarily
+    	  const wrapper = document.createElement("div");
+    	  wrapper.appendChild(clonedTable);
+    	  document.body.appendChild(wrapper);
+
+    	  const opt = {
+    	    margin:       [0.75, 0.5, 0.75, 0.5],
+    	    filename:     'Student_Percentage_Report.pdf',
+    	    image:        { type: 'jpeg', quality: 0.98 },
+    	    html2canvas:  { scale: 3 },
+    	    jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' }
+    	  };
+
+    	  html2pdf().from(wrapper).set(opt).save().then(() => {
+    	    document.body.removeChild(wrapper);
+    	  });
+    	}
+
+
+
+  </script>
+</body>
+</html>
