@@ -68,7 +68,7 @@
     	<dependency>
         	<groupId>javax.servlet</groupId>
         	<artifactId>jstl</artifactId>
-        	<version>1.2</version> <!-- ✅ Add version -->
+        	<version>1.2</version> 
     	</dependency>
     	<dependency>
         	<groupId>jakarta.servlet</groupId>
